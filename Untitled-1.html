@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID-Plastic | Decodificatore Polimeri</title>
+    <style>
+        :root {
+            /* Colori Tema Scuro */
+            --bg-color: #0b0d10;
+            --surface-color: #161a22;
+            --surface-hover: #1e242f;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #14b8a6; 
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --success-color: #10b981;
+            --border-color: #2e3440;
+            
+            /* Colori Polimeri */
+            --color-1: #38bdf8; /* PET */
+            --color-2: #34d399; /* HDPE */
+            --color-3: #f87171; /* PVC */
+            --color-4: #fbbf24; /* LDPE */
+            --color-5: #a78bfa; /* PP */
+            --color-6: #f472b6; /* PS */
+            --color-7: #94a3b8; /* OTHER */
+
+            --spacing-sm: 0.75rem;
+            --spacing-md: 1.2rem;
+            --spacing-lg: 1.8rem;
+            --spacing-xl: 2.5rem;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.02em; }
+        p { line-height: 1.6; color: var(--text-secondary); }
+
+        header {
+            text-align: center;
+            padding: var(--spacing-xl) var(--spacing-md) var(--spacing-md);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #fff, var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-md) var(--spacing-xl);
+            position: relative;
+        }
+
+        /* --- Navigazione Viste --- */
+        .view {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
+        }
+        .view.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- Home: Griglia --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            justify-content: center;
+        }
+        @media (min-width: 768px) {
+            .grid-container {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2.5rem;
+            }
+            .grid-container .btn-plastic:last-child {
+                grid-column: 2;
+            }
+        }
+
+        .btn-plastic {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .btn-plastic:hover {
+            transform: translateY(-5px);
+            background-color: var(--surface-hover);
+            border-color: var(--accent-color);
+            box-shadow: 0 10px 30px -10px rgba(20, 184, 166, 0.15);
+        }
+
+        /* Contenitore SVG e Numero */
+        .recycle-icon-wrapper {
+            position: relative;
+            width: 50%;
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .recycle-svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            fill: none;
+            stroke: var(--text-secondary);
+            stroke-width: 1.5;
+            transition: stroke 0.3s ease;
+        }
+
+        .btn-plastic:hover .recycle-svg {
+            stroke: var(--accent-color);
+        }
+
+        .recycle-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            z-index: 2;
+            margin-top: 5px; /* Centratura ottica nel triangolo */
+        }
+
+        .acronym {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        /* --- Pulsanti di Navigazione (Back) --- */
+        .btn-back {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: var(--spacing-sm);
+            padding: 0.5rem 0;
+            transition: color 0.2s;
+        }
+        .btn-back:hover { color: var(--accent-color); }
+
+        /* --- VISTA 2: Panoramica --- */
+        .overview-header {
+            text-align: center;
+            margin-bottom: var(--spacing-md);
+        }
+        .overview-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 0.2rem;
+        }
+        .overview-header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        .quick-facts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: var(--spacing-md);
+        }
+        .fact-box {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .fact-box h4 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        .fact-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .fact-safe { color: var(--success-color); }
+        .fact-warning { color: var(--warning-color); }
+        .fact-danger { color: var(--danger-color); }
+
+        .info-card {
+            background-color: var(--surface-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: var(--spacing-lg);
+            border-left: 4px solid var(--accent-color);
+        }
+        .info-card h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-size: 1.4rem;
+        }
+        .info-card p {
+            margin-bottom: 1rem;
+        }
+        .info-card p:last-child { margin-bottom: 0; }
+
+        /* --- Nuove Tabelle Storia e Utilizzi --- */
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+        .custom-table th {
+            background-color: var(--surface-hover);
+            color: var(--accent-color);
+            text-align: left;
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px 12px 0 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .custom-table td {
+            background-color: var(--bg-color);
+            padding: 1.2rem;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .image-center-placeholder {
+            width: 100%;
+            height: 180px;
+            background-color: var(--surface-hover);
+            border: 1px dashed var(--accent-color);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            margin: 1.5rem 0;
+            font-size: 0.9rem;
+            font-style: italic;
+            transition: all 0.3s ease;
+        }
+
+        /* Pulsanti Approfondimento */
+        .deep-dive-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .btn-deep-dive {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: 500;
+            text-align: left;
+        }
+        .btn-deep-dive:hover {
+            background-color: var(--surface-hover);
+            border-color: var(--accent-color);
+            transform: translateX(5px);
+        }
+        .btn-deep-dive svg {
+            color: var(--accent-color);
+        }
+
+        /* --- VISTA 3: Dettaglio Singolo (Deep Dive) --- */
+        .deep-dive-content {
+            background-color: var(--surface-color);
+            border-radius: 24px;
+            padding: var(--spacing-md);
+            border-top: 4px solid var(--accent-color);
+        }
+        .deep-dive-content h2 {
+            font-size: 1.6rem;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+        
+        .molecule-box {
+            width: 100%;
+            height: 250px;
+            background-color: var(--bg-color);
+            border: 1px dashed var(--border-color);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            margin-top: 1rem;
+            font-style: italic;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>ID-Plastic</h1>
+        <p>Decodificatore interattivo per i 7 codici del riciclo</p>
+    </header>
+
+    <main>
+        <!-- VISTA 1: LA GRIGLIA -->
+        <div id="view-grid" class="view active">
+            <div class="grid-container" id="plastic-grid">
+                <!-- Generato via JS -->
+            </div>
+        </div>
+
+        <!-- VISTA 2: PANORAMICA (Overview) -->
+        <div id="view-overview" class="view">
+            <button class="btn-back" onclick="goHome()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Torna ai Codici
+            </button>
+
+            <div class="overview-header">
+                <h2 id="ov-title" style="color: var(--accent-color);">1 - PET</h2>
+                <p id="ov-name">Polietilentereftalato</p>
+            </div>
+
+            <!-- Dati Immediati -->
+            <div class="quick-facts">
+                <div class="fact-box">
+                    <h4>Microonde</h4>
+                    <div id="ov-microwave" class="fact-value"></div>
+                </div>
+                <div class="fact-box">
+                    <h4>Riciclo</h4>
+                    <div id="ov-recycle" class="fact-value"></div>
+                </div>
+                <div class="fact-box">
+                    <h4>Tossicità Base</h4>
+                    <div id="ov-tox-level" class="fact-value"></div>
+                </div>
+            </div>
+
+            <!-- Storia e Consigli -->
+            <div class="info-card">
+                
+                <!-- Tabellina Storia -->
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>📖 Storia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="ov-history-text"></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Spazio Centrale per Immagine -->
+                <div class="image-center-placeholder">
+                    [Spazio per inserire l'Immagine del Polimero/Oggetto]
+                </div>
+
+                <!-- Tabellina Utilizzi -->
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>⚙️ Utilizzi Principali</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="ov-uses-text"></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <hr style="border-color: var(--border-color); margin: 1.5rem 0; opacity: 0.5;">
+                <h3 style="color: var(--warning-color); font-size: 1.1rem;">💡 Consigli Utili</h3>
+                <p id="ov-tips"></p>
+            </div>
+
+            <!-- Menu per i 3 Punti di Approfondimento -->
+            <div class="deep-dive-menu">
+                <button class="btn-deep-dive" onclick="openDeepDive('chimica')">
+                    <span>1. Decodificatore Molecolare</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+                <button class="btn-deep-dive" onclick="openDeepDive('tossicita')">
+                    <span>2. Profilo di Tossicità e Stabilità</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+                <button class="btn-deep-dive" onclick="openDeepDive('ambiente')">
+                    <span>3. Passaporto Ambientale</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- VISTA 3: APPROFONDIMENTO SINGOLO (Deep Dive) -->
+        <div id="view-deep-dive" class="view">
+            <button class="btn-back" onclick="backToOverview()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Torna alla Panoramica
+            </button>
+
+            <div class="deep-dive-content">
+                <h2 id="dd-title">Titolo Sezione</h2>
+                <p id="dd-text">Testo approfondito...</p>
+                
+                <!-- Spazio per molecola (visibile solo nella sezione chimica) -->
+                <div id="dd-molecule-box" class="molecule-box" style="display: none;">
+                    [Spazio riservato per SVG Struttura Molecolare del Monomero]
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * Database Dati (Aggiornato con le info dai PDF)
+         */
+        const plasticData = {
+            1: {
+                acronym: "PET",
+                name: "Polietilentereftalato",
+                color: "var(--color-1)",
+                overview: {
+                    microwave: "<span class='fact-danger'>Assolutamente No</span>",
+                    recycle: "<span class='fact-success'>Molto Facile (Plastica)</span>",
+                    toxLevel: "<span class='fact-warning'>Medio (se scaldato)</span>",
+                    history: "Spesso chiamato anche PETE, è un polimero della famiglia dei poliesteri. Ha origini legate alla ricerca di nuove fibre sintetiche ed è noto con i marchi commerciali di Dacron o Terital.",
+                    uses: "Ampiamente impiegato per la produzione di bottiglie d'acqua, contenitori per bevande e nell'industria tessile per la produzione del pile.",
+                    tips: "Non lasciare mai le bottigliette d'acqua al sole o in auto d'estate: il calore accelera il rilascio di antimonio (un catalizzatore di produzione) e acetaldeide nell'acqua. Evita di riutilizzare all'infinito le bottiglie monouso."
+                },
+                deepDive: {
+                    chimica: {
+                        title: "Decodificatore Molecolare",
+                        text: "Il PET è un poliestere termoplastico. Viene sintetizzato tramite reazione di policondensazione tra acido tereftalico (o dimetil tereftalato) e glicol etilenico. I gruppi funzionali coinvolti sono i gruppi carbossilici e ossidrilici che formano legami estere, rilasciando acqua o metanolo come sottoprodotto."
+                    },
+                    tossicita: {
+                        title: "Profilo di Tossicità e Stabilità",
+                        text: "Chimicamente stabile a temperatura ambiente. Tuttavia, la sua temperatura di transizione vetrosa è relativamente bassa (circa 70-80°C). Se sottoposto a calore (microonde o sole diretto), la matrice polimerica si ammorbidisce e può favorire la migrazione di monomeri non reagiti e metalli pesanti (antimonio) nel cibo o nell'acqua."
+                    },
+                    ambiente: {
+                        title: "Passaporto Ambientale",
+                        text: "È uno dei polimeri più riciclati al mondo (viene trasformato in rPET, utilizzato per nuovi imballaggi o per tessuti sintetici come il pile). Tuttavia, se disperso nell'ambiente, non è biodegradabile e impiega centinaia di anni per fotodegradarsi in microplastiche, che si infiltrano nei cicli biologici."
+                    }
+                }
+            },
+            2: {
+                acronym: "HDPE",
+                name: "Polietilene ad alta densità",
+                color: "var(--color-2)",
+                overview: {
+                    microwave: "<span class='fact-safe'>Sì (relativamente sicuro)</span>",
+                    recycle: "<span class='fact-success'>Facile (Plastica)</span>",
+                    toxLevel: "<span class='fact-safe'>Molto Basso</span>",
+                    history: "Rappresenta uno dei polimeri sintetici dominanti a livello globale. Molto apprezzato per il suo eccellente rapporto resistenza/densità, nel 2008 il suo mercato ha superato i 30 milioni di tonnellate.",
+                    uses: "Impiegato massicciamente per i flaconi di detersivi, contenitori di shampoo, tappi per bottiglie e resistenti tubazioni per la distribuzione di gas e acqua.",
+                    tips: "È considerata una delle plastiche più sicure per il contatto alimentare (non rilascia BPA o ftalati). Se devi usare contenitori in plastica nel microonde, assicurati che siano marchiati con il numero 2 (o 5)."
+                },
+                deepDive: {
+                    chimica: {
+                        title: "Decodificatore Molecolare",
+                        text: "L'HDPE è un polimero lineare dell'etilene (CH2=CH2). Viene prodotto tramite polimerizzazione di coordinazione utilizzando speciali catalizzatori (Ziegler-Natta o metalloceni) che garantiscono l'assenza di ramificazioni. Questa struttura lineare permette alle catene di compattarsi strettamente, conferendo alta densità e cristallinità."
+                    },
+                    tossicita: {
+                        title: "Profilo di Tossicità e Stabilità",
+                        text: "L'HDPE presenta un'eccellente inerzia chimica. Resiste a solventi, acidi e basi. Non contiene bisfenolo A (BPA) o ftalati (plastificanti). Il suo punto di fusione è superiore a quello dell'LDPE, rendendolo stabile a temperature moderate e sicuro per il contatto con gli alimenti."
+                    },
+                    ambiente: {
+                        title: "Passaporto Ambientale",
+                        text: "Riciclabile al 100% meccanicamente per produrre nuovi flaconi o tubi. Grazie alla sua densità e cristallinità, resiste quasi totalmente alla degradazione batterica e idrolitica ambientale, rimanendo intatto nell'ecosistema per secoli se non smaltito correttamente."
+                    }
+                }
+            },
+            3: {
+                acronym: "PVC",
+                name: "Cloruro di polivinile",
+                color: "var(--color-3)",
+                overview: {
+                    microwave: "<span class='fact-danger'>MAI</span>",
+                    recycle: "<span class='fact-warning'>Difficile</span>",
+                    toxLevel: "<span class='fact-danger'>Alto (se combusto)</span>",
+                    history: "È il polimero vinilico più importante e tra i più antichi. Puro è un materiale molto rigido, ma miscelato ad additivi plastificanti (come gli esteri dell'acido ftalico) diventa flessibile.",
+                    uses: "Nella versione rigida è essenziale in edilizia (tubi, infissi). Nella variante flessibile si usa per finte pelli, rivestimenti di cavi elettrici e pavimentazioni.",
+                    tips: "Evita assolutamente di usare pellicole o contenitori in PVC per scaldare cibi, soprattutto se grassi, perché gli additivi plastificanti migrano facilmente negli alimenti. Non bruciare mai questa plastica!"
+                },
+                deepDive: {
+                    chimica: {
+                        title: "Decodificatore Molecolare",
+                        text: "Il PVC è un polimero ottenuto per polimerizzazione radicalica del cloruro di vinile (CH2=CHCl). La sua molecola contiene un'alta percentuale (circa 57% in peso) di cloro. Questo atomo di cloro rende la catena asimmetrica e polare."
+                    },
+                    tossicita: {
+                        title: "Profilo di Tossicità e Stabilità",
+                        text: "Il rischio non deriva dal polimero puro, ma dagli additivi. Per renderlo flessibile si usano ftalati, noti interferenti endocrini che non sono legati chimicamente alla catena e migrano nel tempo. Inoltre, se bruciato a basse temperature (fuochi all'aperto, inceneritori inidonei), rilascia acido cloridrico (HCl) gassoso e pericolosissime diossine."
+                    },
+                    ambiente: {
+                        title: "Passaporto Ambientale",
+                        text: "Il riciclo chimico del PVC è complesso ed economicamente svantaggioso proprio a causa della massiccia presenza di cloro, che corrode gli impianti di pirolisi. Lo smaltimento in discarica comporta il lento rilascio dei plastificanti tossici nel suolo e nelle falde acquifere."
+                    }
+                }
+            },
+            4: {
+                acronym: "LDPE",
+                name: "Polietilene a bassa densità",
+                color: "var(--color-4)",
+                overview: {
+                    microwave: "<span class='fact-warning'>Sconsigliato</span>",
+                    recycle: "<span class='fact-success'>Sì (Sacchetti/Pellicole)</span>",
+                    toxLevel: "<span class='fact-safe'>Basso</span>",
+                    history: "È stato il primo tipo di polietilene a essere sintetizzato, creato nel 1933 dalle Imperial Chemical Industries (ICI) tramite un processo ad alta pressione con polimerizzazione radicalica.",
+                    uses: "Utilizzato prevalentemente per produrre pellicole trasparenti per alimenti, sacchetti per la spesa, pluriball (imballaggi ammortizzanti) e imballaggi flessibili.",
+                    tips: "Chimicamente sicuro per avvolgere alimenti freddi, ma fonde facilmente (tra 80°C e 95°C). Non usarlo per alimenti bollenti o nel microonde, altrimenti si scioglierà deformandosi sul cibo."
+                },
+                deepDive: {
+                    chimica: {
+                        title: "Decodificatore Molecolare",
+                        text: "Ottenuto tramite polimerizzazione radicalica ad altissime pressioni e temperature. A differenza dell'HDPE, l'LDPE è caratterizzato da un'altissima percentuale di ramificazioni, sia corte che lunghe, lungo la catena di carbonio. Queste ramificazioni impediscono alle molecole di allinearsi e cristallizzare, abbassando la densità del materiale."
+                    },
+                    tossicita: {
+                        title: "Profilo di Tossicità e Stabilità",
+                        text: "A temperatura ambiente è chimicamente inerte e non tossico. Non contiene plastificanti aggiunti per essere flessibile (lo è naturalmente grazie alla sua struttura ramificata). Tende però a subire un rigonfiamento a contatto con alcuni solventi organici e oli."
+                    },
+                    ambiente: {
+                        title: "Passaporto Ambientale",
+                        text: "Il problema ecologico primario dell'LDPE è meccanico, non chimico: essendo estremamente leggero (sacchetti e pellicole), sfugge facilmente ai sistemi di smaltimento, viene trasportato dal vento, intasa i corsi d'acqua e si frammenta molto velocemente in microplastiche superficiali per azione dei raggi solari."
+                    }
+                }
+            },
+            5: {
+                acronym: "PP",
+                name: "Polipropilene",
+                color: "var(--color-5)",
+                overview: {
+                    microwave: "<span class='fact-safe'>Sì (Molto Sicuro)</span>",
+                    recycle: "<span class='fact-success'>Facile (Plastica)</span>",
+                    toxLevel: "<span class='fact-safe'>Molto Basso</span>",
+                    history: "La sua storia è legata al Premio Nobel italiano Giulio Natta. Nel 1954, partendo dagli studi di Karl Ziegler, Natta scoprì come ottenere polipropilene 'isotattico' (ad alta cristallinità).",
+                    uses: "È il materiale di elezione per vaschette per alimenti rigide, tappi a vite, siringhe, componenti per automobili, moquette e tessuti tecnici.",
+                    tips: "È la plastica regina per la conservazione e il riscaldamento dei cibi. Grazie alla sua altissima resistenza termica, i contenitori in PP possono essere lavati in lavastoviglie ad alte temperature e messi nel microonde senza problemi strutturali."
+                },
+                deepDive: {
+                    chimica: {
+                        title: "Decodificatore Molecolare",
+                        text: "Polimero ottenuto dal propilene (CH2=CH-CH3). La rivoluzione introdotta dai catalizzatori di Ziegler-Natta è stata la capacità di creare polipropilene *isotattico*: tutti i gruppi metilici (-CH3) sono allineati dallo stesso lato della catena. Questa regolarità stereochimica permette un'elevata cristallinità e resistenza."
+                    },
+                    tossicita: {
+                        title: "Profilo di Tossicità e Stabilità",
+                        text: "Possiede una resistenza termica formidabile (fonde oltre i 160°C). È chimicamente inerte, non necessita di plastificanti (niente ftalati o BPA) ed è idoneo persino per le sterilizzazioni ospedaliere in autoclave."
+                    },
+                    ambiente: {
+                        title: "Passaporto Ambientale",
+                        text: "Ottimamente riciclabile tramite processi meccanici. Una criticità ambientale del PP è la sua densità (circa 900 kg/m3): essendo inferiore a quella dell'acqua, galleggia facilmente, diventando uno dei principali inquinanti plastici sulla superficie di fiumi e mari."
+                    }
+                }
+            },
+            6: {
+                acronym: "PS",
+                name: "Polistirene",
+                color: "var(--color-6)",
+                overview: {
+                    microwave: "<span class='fact-danger'>Assolutamente No</span>",
+                    recycle: "<span class='fact-warning'>Molto Difficile</span>",
+                    toxLevel: "<span class='fact-danger'>Alto (potenziale)</span>",
+                    history: "Fu scoperto nel 1839 da Eduard Simon, uno speziale berlinese, che distillò dalla resina del Liquidambar una sostanza (styrol) che si trasformò spontaneamente in un polimero gelatinoso.",
+                    uses: "Nella versione rigida (GPPS) si usa per posate monouso e custodie per CD. Nella versione espansa (EPS, Polistirolo) si impiega per imballaggi e isolamento termico.",
+                    tips: "Non usare mai bicchieri o vaschette di polistirolo per bevande bollenti (come tè o caffè bollente) o cibi molto caldi e grassi: il calore scioglie il polimero e favorisce il rilascio del monomero di base (stirene), che è tossico."
+                },
+                deepDive: {
+                    chimica: {
+                        title: "Decodificatore Molecolare",
+                        text: "Polimero termoplastico aromatico la cui unità monomerica è lo stirene (vinilbenzene). La presenza dell'ingombrante anello benzenico rende la catena polimerica molto rigida. Il PS standard è amorfo (disordinato), il che gli conferisce trasparenza ma lo rende estremamente fragile (scricchiola e si spezza facilmente)."
+                    },
+                    tossicita: {
+                        title: "Profilo di Tossicità e Stabilità",
+                        text: "Solubile in idrocarburi e molti solventi. A contatto prolungato con calore o grassi, depolimerizza leggermente rilasciando tracce di stirene monomero. Lo stirene è un composto sospetto cancerogeno e un noto neurotossico."
+                    },
+                    ambiente: {
+                        title: "Passaporto Ambientale",
+                        text: "Dal punto di vista ecologico, il polistirene espanso (EPS) è disastroso: è ultraleggero (costituito per il 98% da aria) e si sbriciola con estrema facilità in migliaia di palline bianche che vengono scambiate per cibo e ingerite dalla fauna marina e terrestre. Il riciclo è difficile per l'alto costo logistico di trasporto dell'aria in esso contenuta."
+                    }
+                }
+            },
+            7: {
+                acronym: "OTHER",
+                name: "Miste / Policarbonato / PLA",
+                color: "var(--color-7)",
+                overview: {
+                    microwave: "<span class='fact-warning'>Dipende (Leggere l'etichetta)</span>",
+                    recycle: "<span class='fact-warning'>Vedi Regole Locali</span>",
+                    toxLevel: "<span class='fact-warning'>Variabile</span>",
+                    history: "Categoria 'ombrello' per le plastiche non comprese nei codici 1-6. Include il Policarbonato (PC), sviluppato negli anni '30, e le moderne bioplastiche ottenute dalla fermentazione di zuccheri (PLA).",
+                    uses: "Varia ampiamente: dal Policarbonato (usato per CD, lenti e scudi resistenti) al PLA (impiegato per packaging compostabile industriale e filamenti per stampa 3D).",
+                    tips: "Se l'oggetto riporta la sigla 'PLA' o 'Compostabile', buttalo nell'umido organico. Se è un imballaggio in plastica complessa (senza sigla PLA), va gettato nella plastica. Se è un oggetto rigido (es. giocattolo), va nel secco indifferenziato."
+                },
+                deepDive: {
+                    chimica: {
+                        title: "Decodificatore Molecolare",
+                        text: "Trattandosi di una categoria mista, ci sono due estremi: \n1. Il Policarbonato (PC) è un poliestere dell'acido carbonico derivato chimicamente dal Bisfenolo A e dal fosgene (materiale estremamente robusto e trasparente).\n2. L'Acido Polilattico (PLA) è invece un polimero di origine biologica ottenuto per fermentazione di zuccheri e amidi (mais, canna da zucchero)."
+                    },
+                    tossicita: {
+                        title: "Profilo di Tossicità e Stabilità",
+                        text: "Il Policarbonato (PC) è stato molto criticato e bandito per i biberon perché rilascia Bisfenolo A (BPA), un potente e accertato interferente endocrino (simula gli estrogeni). Il PLA (bioplastica), invece, è altamente biocompatibile, sicuro e non rilascia sostanze tossiche."
+                    },
+                    ambiente: {
+                        title: "Passaporto Ambientale",
+                        text: "Il fine vita è opposto. Il Policarbonato e le resine complesse finiscono solitamente negli inceneritori o in discarica. Le bioplastiche come il PLA sono teoricamente biodegradabili, ma attenzione: necessitano di impianti di compostaggio industriale (alte temperature e umidità controllata) per degradarsi, non si sciolgono se gettate in mare o nel compost domestico."
+                    }
+                }
+            }
+        };
+
+        // Stato dell'applicazione
+        let currentPlasticId = null;
+
+        // Referenze DOM
+        const viewGrid = document.getElementById('view-grid');
+        const viewOverview = document.getElementById('view-overview');
+        const viewDeepDive = document.getElementById('view-deep-dive');
+        
+        // Elementi Overview
+        const ovTitle = document.getElementById('ov-title');
+        const ovName = document.getElementById('ov-name');
+        const ovMicrowave = document.getElementById('ov-microwave');
+        const ovRecycle = document.getElementById('ov-recycle');
+        const ovToxLevel = document.getElementById('ov-tox-level');
+        const ovHistoryText = document.getElementById('ov-history-text');
+        const ovUsesText = document.getElementById('ov-uses-text');
+        const ovTips = document.getElementById('ov-tips');
+
+        // Elementi Deep Dive
+        const ddTitle = document.getElementById('dd-title');
+        const ddText = document.getElementById('dd-text');
+        const ddMoleculeBox = document.getElementById('dd-molecule-box');
+
+        // SVG Vettoriale del Simbolo del Riciclo (Möbius loop design pulito)
+        const getRecycleSVG = (color) => `
+            <svg class="recycle-svg" viewBox="0 0 100 100" style="stroke: ${color}; opacity: 0.8;">
+                <path d="M 50 12 L 88 78 L 12 78 Z" stroke-width="6" stroke-linejoin="round" fill="none"/>
+                <path d="M 45 15 L 50 12 L 55 20" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 83 75 L 88 78 L 81 83" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 17 75 L 12 78 L 19 83" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
+
+        // Inizializza Griglia
+        function initGrid() {
+            const gridContainer = document.getElementById('plastic-grid');
+            for (let i = 1; i <= 7; i++) {
+                const data = plasticData[i];
+                const btn = document.createElement('button');
+                btn.className = 'btn-plastic';
+                btn.innerHTML = `
+                    <div class="recycle-icon-wrapper">
+                        ${getRecycleSVG(data.color)}
+                        <span class="recycle-number" style="color: ${data.color};">${i}</span>
+                    </div>
+                    <span class="acronym">${data.acronym}</span>
+                `;
+                btn.onclick = () => openOverview(i);
+                gridContainer.appendChild(btn);
+            }
+        }
+
+        // Funzione Navigazione Fluid
+        function switchView(hideEl, showEl) {
+            hideEl.style.opacity = '0';
+            hideEl.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                hideEl.classList.remove('active');
+                hideEl.style.display = 'none'; // FIX: Rimuove fisicamente l'elemento invisibile
+                
+                showEl.style.display = 'block';
+                void showEl.offsetWidth; // force reflow
+                
+                showEl.classList.add('active');
+                showEl.style.opacity = '1';
+                showEl.style.transform = 'translateY(0)';
+            }, 300);
+        }
+
+        // Vai alla Panoramica
+        function openOverview(id) {
+            currentPlasticId = id;
+            const data = plasticData[id];
+            
+            ovTitle.textContent = `${id} - ${data.acronym}`;
+            ovTitle.style.color = data.color;
+            ovName.textContent = data.name;
+            
+            ovMicrowave.innerHTML = data.overview.microwave;
+            ovRecycle.innerHTML = data.overview.recycle;
+            ovToxLevel.innerHTML = data.overview.toxLevel;
+            
+            ovHistoryText.textContent = data.overview.history;
+            ovUsesText.textContent = data.overview.uses;
+            ovTips.textContent = data.overview.tips;
+
+            // Se veniamo dal deep-dive torniamo all'overview, se veniamo dalla grid passiamo all'overview
+            if(viewDeepDive.classList.contains('active')) {
+                switchView(viewDeepDive, viewOverview);
+            } else {
+                switchView(viewGrid, viewOverview);
+            }
+        }
+
+        // Vai all'Approfondimento
+        function openDeepDive(sectionKey) {
+            const data = plasticData[currentPlasticId].deepDive[sectionKey];
+            
+            ddTitle.textContent = data.title;
+            ddText.innerHTML = data.text.replace(/\n/g, '<br><br>'); // Supporto per a capo
+            
+            // Mostra il box SVG della molecola solo se siamo nella sezione chimica
+            if (sectionKey === 'chimica') {
+                ddMoleculeBox.style.display = 'flex';
+                // ddMoleculeBox.innerHTML = generateMoleculeSVG(currentPlasticId); // (Futura implementazione vettoriale)
+            } else {
+                ddMoleculeBox.style.display = 'none';
+            }
+
+            switchView(viewOverview, viewDeepDive);
+        }
+
+        // Funzioni per pulsanti Back
+        function goHome() {
+            currentPlasticId = null;
+            switchView(viewOverview, viewGrid);
+        }
+
+        function backToOverview() {
+            openOverview(currentPlasticId);
+        }
+
+        // Avvio app
+        initGrid();
+    </script>
+</body>
+</html>
